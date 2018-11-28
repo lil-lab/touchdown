@@ -1,2 +1,2 @@
-# Touchdown
-Cornell Touchdown natural language navigation and spatial reasoning dataset.
+## Touchdown: Natural Language Navigation and Spatial Reasoning in Visual Street Environments Dataset
+Coming very soon...
