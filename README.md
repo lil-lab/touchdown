@@ -2,11 +2,14 @@
 
 Touchdown is a corpus for executing navigation instructions and resolving spatial descriptions in visual real-world environments. The task is to follow instruction to a goal position and there find a hidden object, Touchdown the bear. 
 
+<p align="center">  
+  <img src="touchdown.gif">
+</p>
+
+
 The details of the corpus and task are described in: **Touchdown: Natural Language Navigation and Spatial Reasoning in Visual Street Environments**. Howard Chen, Alane Suhr, Dipendra Misra, Noah Snavely, and Yoav Artzi.
 
 Paper: [https://arxiv.org/abs/1811.12354](https://arxiv.org/abs/1811.12354)
-
-![](touchdown.gif)
 
 ## Starting example
 The example runs a random policy with dummy image features in the environment. 
