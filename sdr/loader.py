@@ -16,14 +16,8 @@ class Loader:
         self.vocab = Vocabulary()
         self.max_length = 0
         self.datasets = {}
-##################################################################
-#        self.image_dir = '/home/hc839/street-view-navigation/touchdown_location/features/'
-#        self.target_dir = '/home/hc839/street-view-navigation/touchdown_location/target/'
-##################################################################
-        # keep
-        self.image_dir = '/home/hc839/street-view-navigation/touchdown_location/image_features/' # merged feature2 shape=(100, 464, 128)
+        self.image_dir = '/home/hc839/street-view-navigation/touchdown_location/image_features/'
         self.target_dir = '/home/hc839/street-view-navigation/touchdown_location/sdr_target/'
-##################################################################
 
     def load_json(self, filename):
         path = os.path.join(self.data_dir, filename)
@@ -42,38 +36,15 @@ class Loader:
                         'route_id': obj['route_id'],
                         'panoid': obj[pano_type], 
                         'center': center,
-#                        'heading': obj[heading],
                         'text': obj['td_location_text'],
                     })
         return data
 
     def load_image_paths(self, data):
-##################################################################
-#        # don't keep
-#        angle_dict = defaultdict(list)
-#        for file in os.listdir(self.image_dir):
-#            if not file.endswith('.npy'):
-#                continue
-#            panoid, angle, ext = file.split('.')
-#            angle_dict[panoid].append(int(angle))
-#
-#        for panoid in angle_dict.keys():
-#            angle_dict[panoid] = sorted(angle_dict[panoid])
-##################################################################
-
         image_paths = []
         for data_obj in data:
             panoid = data_obj['panoid']
-##################################################################
-#        # don't keep
-#            angles = angle_dict[panoid]
-#            center_idx = -1
-#            angles = angles[center_idx - 3:] + angles[:center_idx - 3] # hacky fix
-#            image_paths.append(['{}{}.{}.npy'.format(self.image_dir, panoid, angle) for angle in angles])
-##################################################################
-            # keep    
             image_paths.append('{}{}.npy'.format(self.image_dir, panoid))
-##################################################################
         return image_paths
 
     def load_target_paths(self, data):
@@ -146,7 +117,6 @@ class Vocabulary:
         self.idx2word = {0: '<pad>', 1: '<unk>'}
 
     def add_word(self, word, mode):
-        # TODO: need to clean up
         if word not in self.word2idx and mode in ('train', 'dev'):
             idx = len(self.idx2word)
             self.idx2word[idx] = word
@@ -177,17 +147,8 @@ class TDLocationDataset(Dataset):
         text = torch.cuda.LongTensor(self.texts[index])
         seq_length = np.array(self.seq_lengths[index])
         target = torch.FloatTensor(np.load(self.target_paths[index]))
-
-##################################################################
-#        # don't keep
-#        perspective_features = [np.load(perspective_path) for perspective_path in self.image_paths[index]]
-#        image = np.concatenate(perspective_features, axis=2)
-##################################################################
-        # keep
         image = np.load(self.image_paths[index]).transpose(2, 0, 1)
-##################################################################
         image = torch.cuda.FloatTensor(image)
-
 
         if not self.gaussian_target:
             # concentrate the prob mass to the peak of the gaussian
@@ -203,32 +164,3 @@ class TDLocationDataset(Dataset):
 
     def __len__(self):
         return len(self.image_paths)
-
-
-if __name__ == '__main__':
-    loader = Loader('../data/')
-#    data = loader.load_json('train.json')
-#    data = loader.load_json('dev.json')
-    data = loader.load_json('test.json')
-    with open('sdr_data/sdr_test.json', 'w') as f:
-        for obj in data:
-            f.write(json.dumps(obj))
-            f.write('\n')
-    abc
-    loader.build_dataset('train.json', gaussian_target=True, sample_used=1.0)
-    loader.build_dataset('dev.json', gaussian_target=True, sample_used=1.0)
-    loader.build_dataset('test.json', gaussian_target=True, sample_used=1.0)
-    train_iterator = DataLoader(dataset=loader.datasets['train'], batch_size=10, shuffle=False)
-    dev_iterator = DataLoader(dataset=loader.datasets['dev'], batch_size=10, shuffle=False)
-    test_iterator = DataLoader(dataset=loader.datasets['test'], batch_size=10, shuffle=False)
-
-    for image, text, seq_length, target, center in test_iterator:
-        print(seq_length)
-    
-    panoids = []
-    with open('../graph/nodes.txt') as f:
-        for line in f:
-            _, panoid, _, _, _ = line.split(',')
-            panoids.append(panoid)
-    loader.cache_image_embeds_from_s3(panoids, mode='Graph')
-
