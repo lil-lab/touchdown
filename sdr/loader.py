@@ -11,13 +11,13 @@ gpu = torch.device('cuda')
 cpu = torch.device('cpu')
 
 class Loader:
-    def __init__(self, data_dir):
+    def __init__(self, data_dir, image_dir, target_dir):
         self.data_dir = data_dir
         self.vocab = Vocabulary()
         self.max_length = 0
         self.datasets = {}
-        self.image_dir = '/home/hc839/street-view-navigation/touchdown_location/image_features/'
-        self.target_dir = '/home/hc839/street-view-navigation/touchdown_location/sdr_target/'
+        self.image_dir = image_dir
+        self.target_dir = target_dir
 
     def load_json(self, filename):
         path = os.path.join(self.data_dir, filename)

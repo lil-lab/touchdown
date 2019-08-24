@@ -93,9 +93,9 @@ def clones(module, N):
     return nn.ModuleList([copy.deepcopy(module) for _ in range(N)])
 
 
-class VisualLinearNetwork(nn.Module):
+class Concat(nn.Module):
     def __init__(self, rnn_args, out_layer_args, image_channels=128):
-        super(VisualLinearNetwork, self).__init__()
+        super(Concat, self).__init__()
 
         if not rnn_args['bidirectional']:
             rnn_hidden_size = rnn_args['rnn_hidden_size']
@@ -132,9 +132,9 @@ class VisualLinearNetwork(nn.Module):
         return out
 
 
-class VisualConvNetwork(nn.Module):
+class ConcatConv(nn.Module):
     def __init__(self, rnn_args, cnn_args, out_layer_args, image_channels=128):
-        super(VisualConvNetwork, self).__init__()
+        super(ConcatConv, self).__init__()
         if not rnn_args['bidirectional']:
             rnn_hidden_size = rnn_args['rnn_hidden_size']
         else:
@@ -292,14 +292,6 @@ class LingUNet(nn.Module):
         # create deconv layers with appropriate paddings
         self.deconv_layers = nn.ModuleList([])
 
-#        if self.m == 4:
-#            output_paddings = [(0, 1), (0, 1), (1, 1), (1, 1)]
-#        elif self.m == 3:
-#            output_paddings = [(0, 1), (1, 1), (1, 1)]
-#        elif self.m == 2:
-#            output_paddings = [(1, 1), (1, 1)]
-
-#        for i, output_padding in enumerate(output_paddings):
         for i in range(self.m):
             in_channels = self.image_channels if i == 0 else self.image_channels * 2
             out_channels = self.image_channels
@@ -310,7 +302,6 @@ class LingUNet(nn.Module):
                     kernel_size=cnn_args['kernel_size'], 
                     padding=cnn_args['padding'],
                     stride=1,
-#                    output_padding=output_padding
                 )
             )
         self.deconv_dropout = nn.Dropout(p=cnn_args['deconv_dropout'])
@@ -344,79 +335,6 @@ class LingUNet(nn.Module):
                 outputs.append(output)
             G = torch.cat(outputs, 0)
             Gs.append(G)
-#            image_embeds = self.conv_layers[i](image_embeds)
-
-        # deconvolution operations, from the bottom up
-        H = Gs.pop()
-        for i in range(self.m):
-#            print(i)
-            if i == 0:
-#                print('H bottom 1:', H.size())
-                H = self.deconv_dropout(H)
-                H = self.deconv_layers[i](H)
-#                print('H bottom 2:', H.size())
-            else:
-                G = Gs.pop()
-#                print('H:', H.size())
-#                print('G:', G.size())
-                concated = torch.cat((H, G), 1)
-                H = self.deconv_layers[i](concated)
-#                print('H inter:', H.size())
-#            print('-------')
-
-#        print('final:', H.size())
-#        input()
-        H = H.permute([0, 2, 3, 1])
-        out = self.out_layers(H).squeeze(-1)
-        out = F.log_softmax(out.view(batch_size, -1), 1).view(batch_size, height, width)
-        return out
-
-
-class UNet(nn.Module):
-    def __init__(self, cnn_args, out_layer_args, image_channels=128, m=4):
-        super(UNet, self).__init__()
-        self.cnn_args = cnn_args
-        self.m = m
-        self.image_channels = image_channels
-
-        conv = nn.Conv2d(
-            in_channels=self.image_channels, 
-            out_channels=self.image_channels, 
-            kernel_size=cnn_args['kernel_size'], 
-            padding=cnn_args['padding']
-        )
-        self.conv_layers = clones(conv, self.m)
-
-        self.deconv_layers = nn.ModuleList([])
-        for i in range(self.m):
-            in_channels = self.image_channels if i == 0 else self.image_channels * 2
-            out_channels = self.image_channels
-            self.deconv_layers.append(
-                nn.ConvTranspose2d(
-                    in_channels=in_channels, 
-                    out_channels=out_channels, 
-                    kernel_size=cnn_args['kernel_size'], 
-                    padding=cnn_args['padding'])
-            )
-        self.deconv_dropout = nn.Dropout(p=cnn_args['deconv_dropout'])
-
-        self.out_layers = LinearProjectionLayers(
-            image_channels=self.image_channels, 
-            linear_hidden_size=out_layer_args['linear_hidden_size'], 
-            rnn_hidden_size=0, 
-            num_hidden_layers=out_layer_args['num_hidden_layers']
-        )
-
-    def forward(self, images, texts, seq_lengths):
-        # texts, seq_lengths are not used
-        batch_size, image_channels, height, width = images.size()
-        
-        Gs = []
-        image_embeds = images
-        for i in range(self.m): 
-            G = image_embeds.clone()
-            Gs.append(G)
-            image_embeds = self.conv_layers[i](image_embeds)
 
         # deconvolution operations, from the bottom up
         H = Gs.pop()
@@ -433,140 +351,4 @@ class UNet(nn.Module):
         out = self.out_layers(H).squeeze(-1)
         out = F.log_softmax(out.view(batch_size, -1), 1).view(batch_size, height, width)
         return out
-
-class ResLingUNet(nn.Module):
-    def __init__(self, rnn_args, cnn_args, out_layer_args, image_channels=128, m=4):
-        super(ResLingUNet, self).__init__()
-        self.cnn_args = cnn_args
-        self.rnn_args = rnn_args
-        self.m = m
-        self.image_channels = image_channels
-
-        if not rnn_args['bidirectional']:
-            self.rnn_hidden_size = rnn_args['rnn_hidden_size']
-        else:
-            self.rnn_hidden_size = rnn_args['rnn_hidden_size'] * 2
-        assert self.rnn_hidden_size % self.m == 0
-
-        self.rnn = RNN(
-            rnn_args['input_size'], 
-            rnn_args['embed_size'], 
-            rnn_args['rnn_hidden_size'], 
-            rnn_args['num_rnn_layers'], 
-            rnn_args['embed_dropout'],
-            rnn_args['bidirectional'],
-            rnn_args['reduce']
-        ).to(device)
-
-        sliced_text_vector_size = self.rnn_hidden_size // self.m
-        flattened_conv_filter_size = 1 * 1 * self.image_channels * self.image_channels
-        self.text2convs = clones(nn.Linear(sliced_text_vector_size, flattened_conv_filter_size), self.m)
-
-        conv = nn.Conv2d(
-            in_channels=self.image_channels, 
-            out_channels=self.image_channels, 
-            kernel_size=cnn_args['kernel_size'], 
-            padding=cnn_args['padding']
-        )
-        self.conv_layers = clones(conv, self.m)
-
-        self.deconv_layers = nn.ModuleList([])
-        for i in range(self.m):
-            in_channels = self.image_channels if i == 0 else self.image_channels * 2
-            out_channels = self.image_channels
-            self.deconv_layers.append(
-                nn.ConvTranspose2d(
-                    in_channels=in_channels, 
-                    out_channels=out_channels, 
-                    kernel_size=cnn_args['kernel_size'], 
-                    padding=cnn_args['padding'])
-            )
-        self.deconv_dropout = nn.Dropout(p=cnn_args['deconv_dropout'])
-
-        self.out_layers = LinearProjectionLayers(
-            image_channels=self.image_channels, 
-            linear_hidden_size=out_layer_args['linear_hidden_size'], 
-            rnn_hidden_size=0, 
-            num_hidden_layers=out_layer_args['num_hidden_layers']
-        )
-
-    def forward(self, images, texts, seq_lengths):
-        batch_size, image_channels, height, width = images.size()
-
-        text_embed = self.rnn(texts, seq_lengths)[-1]
-        sliced_size = self.rnn_hidden_size // self.m
-        
-        Gs = []
-        image_embeds = images
-        for i in range(self.m): 
-            text_slice = text_embed[:, i * sliced_size:(i + 1) * sliced_size]
-
-            conv_kernel_shape = (batch_size, self.image_channels, self.image_channels, 1, 1)
-            text_conv_filters = self.text2convs[i](text_slice).view(conv_kernel_shape)
-
-            # looping over batch TODO: this is very inefficient, need to optimize
-            outputs = []
-            for image_embed, text_conv_filter in zip(image_embeds, text_conv_filters):
-                output = F.conv2d(image_embed.unsqueeze(0), text_conv_filter) + image_embed
-                outputs.append(output)
-            G = torch.cat(outputs, 0)
-            Gs.append(G)
-            image_embeds = self.conv_layers[i](image_embeds)
-
-        # deconvolution operations, from the bottom up
-        H = Gs.pop()
-        for i in range(self.m):
-            if i == 0:
-                H = self.deconv_dropout(H)
-                H = self.deconv_layers[i](H) + H
-            else:
-                G = Gs.pop()
-                concated = torch.cat((H, G), 1)
-                H = self.deconv_layers[i](concated) + H
-
-        H = H.permute([0, 2, 3, 1])
-        out = self.out_layers(H).squeeze(-1)
-        out = F.log_softmax(out.view(batch_size, -1), 1).view(batch_size, height, width)
-        return out
-        
-
-if __name__ == '__main__':
-    # load data
-    loader = Loader('./data/')
-    loader.build_dataset(file='train.json', gaussian_target=True, sample_used=1.0)
-
-    rnn_args = {
-        'input_size': len(loader.vocab),
-        'embed_size': 300,
-        'rnn_hidden_size': 300,
-        'num_rnn_layers': 1,
-        'embed_dropout': 0.1,
-        'bidirectional': True,
-        'reduce': 'mean'
-    }
-    cnn_args = {'kernel_size': 5, 'padding': 2, 'stride': 2, 'num_conv_layers': 1}
-    out_layer_args = {'linear_hidden_size': 300, 'num_hidden_layers': 1}
-
-#    model = VisualConvNetwork(rnn_args=rnn_args, cnn_args=cnn_args).to(device)
-#    model = VisualLinearNetwork(rnn_args=rnn_args).to(device)
-#    model = TransformerCNN(input_size=len(loader.vocab), d_model=10, dropout=0.1).to(device)
-#    model = BiRNNConv(rnn_args=rnn_args, cnn_args=cnn_args).to(device)
-    model = LingUNet(rnn_args=rnn_args, cnn_args=cnn_args, out_layer_args=out_layer_args).to(device)
-
-    train_iterator = DataLoader(dataset=loader.datasets['train'], batch_size=10, shuffle=True)
-    optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
-    loss_func = nn.KLDivLoss(size_average=False)
-
-    num_params = sum([p.numel() for p in model.parameters() if p.requires_grad])
-    print('Number of parameters:', num_params)
-
-    for batch_images, batch_texts, batch_seq_lengths, batch_targets in train_iterator:
-        batch_size, C, H, W = batch_images.size()
-        optimizer.zero_grad()
-
-        preds = model(batch_images, batch_texts, batch_seq_lengths)
-        loss = loss_func(preds, batch_targets) / batch_size
-        loss.backward()
-        optimizer.step()
-        print(loss.item())
 

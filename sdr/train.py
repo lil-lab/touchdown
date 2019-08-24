@@ -1,7 +1,10 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.utils.data import DataLoader
+from torch.utils.data.sampler import SubsetRandomSampler
 import numpy as np
+from tensorboardX import SummaryWriter
 
 import logging
 import argparse
@@ -9,22 +12,26 @@ import datetime
 import os
 import copy
 
-from torch.utils.data import DataLoader
-from torch.utils.data.sampler import SubsetRandomSampler
-
 from loader import Loader
-from model import VisualLinearNetwork
-from model import VisualConvNetwork
+from model import Concat
+from model import ConcatConv
 from model import RNN2Conv
 from model import LingUNet
-from model import UNet
-from model import ResLingUNet
-from tensorboardX import SummaryWriter
 
-parser = argparse.ArgumentParser(description='Touchdown locating task')
+
+parser = argparse.ArgumentParser(description='SDR task')
+
+# set path to data folders
+parser.add_argument('--data_dir', type=str, default=None,
+                    help='path to data folder where train.json, dev.json, and test.json files')
+parser.add_argument('--image_dir', type=str, default=None,
+                    help='path to `image_features`')
+parser.add_argument('--target_dir', type=str, default=None,
+                    help='path to sdr_targets')
+
 parser.add_argument('--name', type=str, default='run',
                     help='name of the run')
-parser.add_argument('--model', type=str, default='vis_linear',
+parser.add_argument('--model', type=str, default='concat',
                     help='model used')
 
 # CNN
@@ -79,7 +86,7 @@ parser.add_argument('--batch_size', type=int, default=10, metavar='N',
                     help='batch size')
 parser.add_argument('--seed', type=int, default=42,
                     help='random seed')
-parser.add_argument('--print_every', type=int, default=100, metavar='N',
+parser.add_argument('--print_every', type=int, default=50, metavar='N',
                     help='report interval')
 parser.add_argument('--save', type=str,  default='model.pt',
                     help='path to save the final model')
@@ -138,7 +145,7 @@ def log(mode, log_info):
 
 
 def distance_metric(preds, targets):
-    '''Calculate distances between model predictions and targets within a batch.'''
+    """Calculate distances between model predictions and targets within a batch."""
     preds = preds.cpu()
     targets = targets.cpu()
     distances = []
@@ -230,14 +237,15 @@ def train(model, data_iterator, epoch):
         batch_idx += 1
 
 
-def split_dataset(dataset, split_ratio, batch_size):
+def split_dataset(dataset, split_ratio, batch_size, shuffle_split=False):
     # creating data indices for training and tuning splits
     dataset_size = len(dataset)
     indices = list(range(dataset_size))
     split = int(dataset_size * split_ratio)
 
-#    np.random.seed(args.seed)
-#    np.random.shuffle(indices)
+    if shuffle_split:
+        np.random.seed(args.seed)
+        np.random.shuffle(indices)
 
     train_indices = indices[split:]
     tune_indices = indices[:split]
@@ -252,7 +260,8 @@ def split_dataset(dataset, split_ratio, batch_size):
 
 if __name__ == '__main__':
     # load data
-    loader = Loader('/home/hc839/street-view-navigation/data/')
+    loader = Loader(data_dir=args.data_dir, image_dir=args.image_dir, target_dir=args.target_dir)
+
     loader.build_dataset(
         file='train.json', 
         gaussian_target=args.gaussian_target, 
@@ -282,17 +291,14 @@ if __name__ == '__main__':
         'reduce': 'last' if not args.bidirectional else 'mean'
     }
     cnn_args = {}
-    out_layer_args = {
-        'linear_hidden_size': args.linear_hidden_size, 
-        'num_hidden_layers': args.num_linear_hidden_layers
-    }
+    out_layer_args = {'linear_hidden_size': args.linear_hidden_size, 'num_hidden_layers': args.num_linear_hidden_layers}
 
-    if args.model == 'vis_linear':
-        model = VisualLinearNetwork(rnn_args, out_layer_args)
+    if args.model == 'concat':
+        model = Concat(rnn_args, out_layer_args)
 
-    elif args.model == 'vis_conv':
+    elif args.model == 'concat_conv':
         cnn_args = {'kernel_size': 5, 'padding': 2, 'num_conv_layers': args.num_conv_layers, 'conv_dropout': args.conv_dropout}
-        model = VisualConvNetwork(rnn_args, cnn_args, out_layer_args)
+        model = ConcatConv(rnn_args, cnn_args, out_layer_args)
 
     elif args.model == 'rnn2conv':
         assert args.num_rnn2conv_layers is not None
@@ -305,15 +311,6 @@ if __name__ == '__main__':
         cnn_args = {'kernel_size': 5, 'padding': 2, 'deconv_dropout': args.deconv_dropout}
         model = LingUNet(rnn_args, cnn_args, out_layer_args, m=args.num_lingunet_layers)
 
-    elif args.model == 'unet':
-        assert args.num_unet_layers is not None
-        cnn_args = {'kernel_size': 5, 'padding': 2, 'deconv_dropout': args.deconv_dropout}
-        model = UNet(cnn_args, out_layer_args, m=args.num_unet_layers)
-
-    elif args.model == 'reslingunet':
-        assert args.num_reslingunet_layers is not None
-        cnn_args = {'kernel_size': 5, 'padding': 2, 'deconv_dropout': args.deconv_dropout}
-        model = ResLingUNet(rnn_args, cnn_args, out_layer_args, m=args.num_reslingunet_layers)
     else:
         raise ValueError('Please specify model.')
 
