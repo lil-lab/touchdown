@@ -55,9 +55,9 @@ The JSON files contain both data for the navigation task and the SDR task. All t
 You can construct your Gaussian smoothed target from the `*_center` click positions or contact us for cached targets.
 
 ## Image features and panoramas
-Please email hc839@cornell.edu for the image features and SDR targets (Amazon S3 access). To follow Google's terms of service, we collect the emails of all people holding the image features to request data deletion upon request from Google and for other announcements. 
+Please email hc839@cornell.edu for the image features and SDR targets (Amazon S3 access). To follow Google's terms of service, we collect the emails of all people holding the image features to request data deletion upon request from Google and for other announcements.
 
-Scripts for downloading full panorama with the official Google API will be available soon. Data downloaded through the Google API follows the license defined by Google regardless of the download method. 
+Scripts for downloading full panorama with the official Google API will be available soon. When downloading the panoramas, set zoom=4 to match the recorded Touchdown coordinates. Data downloaded through the Google API follows the license defined by Google regardless of the download method.
 
 
 ## License
