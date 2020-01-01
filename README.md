@@ -55,7 +55,7 @@ The JSON files contain both data for the navigation task and the SDR task. All t
 You can construct your Gaussian smoothed target from the `*_center` click positions or contact us for cached targets.
 
 ## Image features and panoramas
-To download the panoramas, please request through the [https://sites.google.com/view/streetlearn/code?authuser=0](StreetLearn) environment and the [https://sites.google.com/view/streetlearn/touchdown?authuser=0](Touchdown dataset page).
+To download the panoramas, please use the [StreetLearn](https://sites.google.com/view/streetlearn/code?authuser=0) environment. You can request access to the panoramic images by filling out the form in [StreetLearn Dataset](https://sites.google.com/view/streetlearn/dataset?authuser=0). More details and code to come in [Touchdown Dataset](https://sites.google.com/view/streetlearn/touchdown?authuser=0).
 
 
 ## License
