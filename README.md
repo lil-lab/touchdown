@@ -59,7 +59,7 @@ To download the panoramas, please use the [StreetLearn](https://sites.google.com
 
 
 ## Reproducing the results
-The Touchdown tasks are reproduced by Harsh et al (2020). For more details, please refer to the paper [Retouchdown: Adding Touchdown to StreetLearn as a Shareable Resource for Language Grounding Tasks in Street View](https://arxiv.org/pdf/2001.03671.pdf) and code [VALAN: Vision and Language Agent Navigation](https://github.com/google-research/valan).
+The Touchdown tasks are reproduced by Harsh et al (2020). For more details, please refer to the paper [Retouchdown](https://arxiv.org/pdf/2001.03671.pdf) and code [VALAN](https://github.com/google-research/valan).
 
 
 ## License
