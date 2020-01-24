@@ -58,7 +58,7 @@ You can construct your Gaussian smoothed target from the `*_center` click positi
 To download the panoramas, please use the [StreetLearn](https://sites.google.com/view/streetlearn/code?authuser=0) environment. You can request access to the panoramic images by filling out the form in [StreetLearn Dataset](https://sites.google.com/view/streetlearn/dataset?authuser=0). More details are [here](https://sites.google.com/view/streetlearn/touchdown?authuser=0).
 
 ## Experiments reproduction code
-The Touchdown tasks are reproduced by Harsh et al (2020). For more details, please refer to [this technical report](https://arxiv.org/pdf/2001.03671.pdf) and code [VALAN](https://github.com/google-research/valan).
+The Touchdown tasks are reproduced by Harsh et al (2020). For more details, please refer to [this technical report](https://arxiv.org/pdf/2001.03671.pdf) and the [VALAN](https://github.com/google-research/valan) codebase.
 
 ## License
 The Touchdown Dataset (c) 2018
