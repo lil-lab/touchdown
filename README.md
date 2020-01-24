@@ -11,6 +11,10 @@ The details of the corpus and task are described in: **Touchdown: Natural Langua
 
 Paper: [https://arxiv.org/abs/1811.12354](https://arxiv.org/abs/1811.12354)
 
+## Data
+
+This repository contains the Touchdown corpus. The navigation environment is made of a large number of panoramas. To download the panoramas, please use the [StreetLearn](https://sites.google.com/view/streetlearn/code?authuser=0) environment. You can request access to the panoramic images by filling out the form in [StreetLearn Dataset](https://sites.google.com/view/streetlearn/dataset?authuser=0). More details are [here](https://sites.google.com/view/streetlearn/touchdown?authuser=0).
+
 ## Starting example
 The example runs a random policy with dummy image features in the environment. 
 
@@ -53,9 +57,6 @@ The JSON files contain both data for the navigation task and the SDR task. All t
 - `pre_static_center`, `main_static_center`, `post_static_center`: the click position `{x: width_ratio, y: height_ratio}` of where Touchdown is placed, `{x: -1, y: -1}` means Touchdown can't be found for the panorama
 
 You can construct your Gaussian smoothed target from the `*_center` click positions or contact us for cached targets.
-
-## Panoramas
-To download the panoramas, please use the [StreetLearn](https://sites.google.com/view/streetlearn/code?authuser=0) environment. You can request access to the panoramic images by filling out the form in [StreetLearn Dataset](https://sites.google.com/view/streetlearn/dataset?authuser=0). More details are [here](https://sites.google.com/view/streetlearn/touchdown?authuser=0).
 
 ## Experiments reproduction code
 The Touchdown tasks are reproduced by Harsh et al (2020). For more details, please refer to [this technical report](https://arxiv.org/pdf/2001.03671.pdf) and the [VALAN](https://github.com/google-research/valan) codebase.
